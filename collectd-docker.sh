@@ -50,8 +50,30 @@ collect ()
     if [ -e memory.stat ]; then
         CACHE=$(cat memory.stat | grep '^cache' | awk '{ print $2; }');
         RSS=$(cat memory.stat | grep '^rss ' | awk '{ print $2; }');
+        MAPPED_FILE=$(cat memory.stat | grep '^mapped_file' | awk '{ print $2; }');
+        PGPGIN=$(cat memory.stat | grep '^pgpgin' | awk '{ print $2; }');
+        PGPGOUT=$(cat memory.stat | grep '^pgpgout' | awk '{ print $2; }');
+        PGFAULT=$(cat memory.stat | grep '^pgfault' | awk '{ print $2; }');
+        PGMAJFAULT=$(cat memory.stat | grep '^pgmajfault' | awk '{ print $2; }');
+        ACTIVE_ANON=$(cat memory.stat | grep '^active_anon' | awk '{ print $2; }');
+        INACTIVE_ANON=$(cat memory.stat | grep '^inactive_anon' | awk '{ print $2; }');
+        ACTIVE_FILE=$(cat memory.stat | grep '^active_file' | awk '{ print $2; }');
+        INACTIVE_FILE=$(cat memory.stat | grep '^inactive_file' | awk '{ print $2; }');
+        UNEVICTABLE=$(cat memory.stat | grep '^unevictable' | awk '{ print $2; }');
+        HIER_MEM_LIMIT=$(cat memory.stat | grep '^hierarchical_memory_limit' | awk '{ print $2; }');
         echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-cached\" interval=$INTERVAL N:$CACHE"
         echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-used\" interval=$INTERVAL N:$RSS"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-mapped-file\" interval=$INTERVAL N:$MAPPED_FILE"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-pgpgin\" interval=$INTERVAL N:$PGPGIN"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-pgpgout\" interval=$INTERVAL N:$PGPGOUT"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-pgfault\" interval=$INTERVAL N:$PGFAULT"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-pgmajfault\" interval=$INTERVAL N:$PGMAJFAULT"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-active-anon\" interval=$INTERVAL N:$ACTIVE_ANON"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-inactive-anon\" interval=$INTERVAL N:$INACTIVE_ANON"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-active-file\" interval=$INTERVAL N:$ACTIVE_FILE"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-inactive-file\" interval=$INTERVAL N:$INACTIVE_FILE"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-unevictable\" interval=$INTERVAL N:$UNEVICTABLE"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-hierarchical-limit\" interval=$INTERVAL N:$HIER_MEM_LIMIT"
     fi;
 
   fi;
