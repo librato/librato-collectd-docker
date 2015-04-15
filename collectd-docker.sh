@@ -91,6 +91,9 @@ while sleep "$INTERVAL"; do
   # Collect stats on memory usage
   ( collect "$CGROUP_MOUNT/memory" )
 
-  # Collect stats on cpu usage
+  # Collect stats on cpuacct usage
   ( collect "$CGROUP_MOUNT/cpuacct" )
+
+  # Collect stats on cpu usage
+  ( collect "$CGROUP_MOUNT/cpu" )
 done
