@@ -7,6 +7,9 @@
 #
 # Author: Mike Moulton <mike@meltmedia.com>
 # License: MIT
+#
+# Extended and adapted for use by Librato
+# Jason Dixon <jdixon@librato.com>
 
 # Location of the cgroup mount point, adjust for your system
 CGROUP_MOUNT="/sys/fs/cgroup"
