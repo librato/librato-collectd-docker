@@ -28,7 +28,17 @@ collect ()
     # Shorten the name to 12 for brevity, like docker does
     NAME=$(expr substr $1 1 12);
 
-    # If we are in a cpuacct cgroup, we can collect cpu usage stats
+    # If we are in a cpu cgroup, we can collect cpu usage stats
+    if [ -e cpu.stat ]; then
+        NR_PERIODS=$(cat cpu.stat | grep '^nr_periods' | awk '{ print $2; }');
+        NR_THROTTLED=$(cat cpu.stat | grep '^nr_throttled' | awk '{ print $2; }');
+        THROTTLED_TIME=$(cat cpu.stat | grep '^throttled_time' | awk '{ print $2; }');
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/cpu-enforce-intervals\" interval=$INTERVAL N:$NR_PERIODS"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/cpu-num-throttled\" interval=$INTERVAL N:$NR_THROTTLED"
+        echo "PUTVAL \"$HOSTNAME/docker-$NAME/cpu-time-throttled\" interval=$INTERVAL N:$THROTTLED_TIME"
+    fi;
+
+    # If we are in a cpuacct cgroup, we can collect cpuacct usage stats
     if [ -e cpuacct.stat ]; then
         USER=$(cat cpuacct.stat | grep '^user' | awk '{ print $2; }');
         SYSTEM=$(cat cpuacct.stat | grep '^system' | awk '{ print $2; }');
