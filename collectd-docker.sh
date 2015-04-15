@@ -36,7 +36,7 @@ collect ()
     # If we are in a memory cgroup, we can collect memory usage stats
     if [ -e memory.stat ]; then
         CACHE=$(cat memory.stat | grep '^cache' | awk '{ print $2; }');
-        RSS=$(cat memory.stat | grep '^rss' | awk '{ print $2; }');
+        RSS=$(cat memory.stat | grep '^rss ' | awk '{ print $2; }');
         echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-cached\" interval=$INTERVAL N:$CACHE"
         echo "PUTVAL \"$HOSTNAME/docker-$NAME/memory-used\" interval=$INTERVAL N:$RSS"
     fi;
