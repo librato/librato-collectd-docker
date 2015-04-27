@@ -22,8 +22,6 @@ import requests
 import json
 import time
 import datetime
-import pprint
-import fileinput
 import os
 import sys
 import re
@@ -51,45 +49,29 @@ try:
 except:
     INTERVAL = 60
 try:
-    SYSMOUNT = os.environ['CGROUP_MOUNT']
+    if os.environ['DEBUG']:
+        DEBUG = True
 except:
-    SYSMOUNT = '/sys/fs/cgroup'
+    DEBUG = False
 
-CGROUP_STATS = {
-    'cpu.stat': {
-        'nr_periods': 'enforce-intervals',
-        'nr_throttled': 'num-throttled',
-        'throttled_time': 'time-throttled',
-    },
-    'cpu_stats': {
-        'user': 'user',
-        'system': 'system',
-    },
-    'memory_stats': {
-        'cache': 'cached',
-        'rss': 'used',
-        'mapped_file': 'mapped-file',
-        'pgpgin': 'pgpgin',
-        'pgpgout': 'pgpgout',
-        'pgfault': 'pgfault',
-        'pgmajfault': 'pgmajfault',
-        'active_anon': 'active-anon',
-        'inactive_anon': 'inactive-anon',
-        'active_file': 'active-file',
-        'inactive_file': 'inactive-file',
-        'unevictable': 'unevictable',
-        'hierarchical_memory_limit': 'hierarchical-limit',
-    },
-    'network': {
-        
-    }
+WHITELIST_STATS = {
+    'docker-librato.\w+.cpu_stats.*',
+    'docker-librato.\w+.memory_stats.*',
+    'docker-librato.\w+.network.*',
+    #'docker-librato.\w+.*',
+}
+
+BLACKLIST_STATS = {
+    'docker-librato.\w+.memory_stats.stats.total_*',
 }
 
 def logging(str):
-    ts = time.time()
-    print "%s: %s" % (datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), str)
+    if DEBUG == True:
+        ts = time.time()
+        print "%s: %s" % (datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S.%f'), str)
 
 def flatten(structure, key="", path="", flattened=None):
+    logging('flattening metric')
     if flattened is None:
         flattened = {}
     if type(structure) not in(dict, list):
@@ -100,35 +82,54 @@ def flatten(structure, key="", path="", flattened=None):
     else:
         for new_key, value in structure.items():
             flatten(value, new_key, path + "." + key, flattened)
+    logging('done flattening metric')
     return flattened
 
 def find_containers():
-    #response = urllib2.urlopen('http://127.0.0.1:2375/containers/json')
-    #result = json.loads(response.read())
-    #response.close()
+    logging('getting container ids')
     r = requests.get('http://127.0.0.1:2375/containers/json')
+    logging('done getting container ids')
     result = json.loads(r.text)
+    logging('done translating result into json')
     return [c['Id'] for c in result]
 
 def gather_stats(container_id):
-    #response = urllib2.urlopen("http://127.0.0.1:2375/containers/%s/stats" % container_id)
-    # This takes 4-5s to complete, not sure why it doesn't immediately return
-    #result = json.loads(response.readline())
-    #response.close()
+    logging('getting container stats')
     r = requests.get("http://127.0.0.1:2375/containers/%s/stats" % container_id, stream=True)
+    logging('done getting container stats')
     result = json.loads(r.raw.readline())
+    logging('done translating result into json')
     return result
 
 def shorten_id(container_id):
     return container_id[0:12]
 
+def compile_regex(list):
+    regexes = []
+    for l in list:
+        regexes.append(re.compile(l))
+    return regexes
+
 try:
     find_containers()
+    whitelist = compile_regex(WHITELIST_STATS)
+    blacklist = compile_regex(BLACKLIST_STATS)
     for id in find_containers():
         try:
             stats = gather_stats(id)
             for i in flatten(stats, key=id[0:12], path='docker-librato').items():
-                print "metric %s has value %s" % (i[0].encode('ascii'), i[1])
+                blacklisted = False
+                for r in blacklist:
+                    if r.match(i[0].encode('ascii')):
+                        logging('skipping blacklisted metric')
+                        blacklisted = True
+                        break
+                if blacklisted == False:
+                    for r in whitelist:
+                        if r.match(i[0].encode('ascii')):
+                            print "metric %s has value %s" % (i[0].encode('ascii'), i[1])
+                            logging('done flattening metric')
+                            break
         except:
             sys.exit(1)
 
