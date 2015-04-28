@@ -58,6 +58,8 @@ WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
+    'docker-librato.\w+.blkio_stats.io_service_bytes_recursive.\d+.value',
+    'docker-librato.\w+.blkio_stats.io_serviced_recursive.\d+.value',
     #'docker-librato.\w+.*',
 }
 
