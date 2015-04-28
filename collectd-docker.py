@@ -73,7 +73,6 @@ def log(str):
         print "%s: %s" % (datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S.%f'), str)
 
 def flatten(structure, key="", path="", flattened=None):
-    log('flattening metric')
     if flattened is None:
         flattened = {}
     if type(structure) not in(dict, list):
@@ -84,7 +83,6 @@ def flatten(structure, key="", path="", flattened=None):
     else:
         for new_key, value in structure.items():
             flatten(value, new_key, path + "." + key, flattened)
-    log('done flattening metric')
     return flattened
 
 def find_containers():
@@ -123,14 +121,13 @@ try:
                 blacklisted = False
                 for r in blacklist:
                     if r.match(i[0].encode('ascii')):
-                        log('skipping blacklisted metric')
                         blacklisted = True
                         break
                 if blacklisted == False:
                     for r in whitelist:
-                        if r.match(i[0].encode('ascii')):
-                            print "metric %s has value %s" % (i[0].encode('ascii'), i[1])
-                            log('done flattening metric')
+                        metric = i[0].encode('ascii')
+                        if r.match(metric):
+                            print "PUTVAL \"%s/%s\" interval=%s N:%s" % (HOSTNAME, metric.replace('.', '/'), INTERVAL, i[1])
                             break
         except:
             sys.exit(1)
