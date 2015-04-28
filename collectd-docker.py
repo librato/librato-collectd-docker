@@ -67,13 +67,13 @@ BLACKLIST_STATS = {
     'docker-librato.\w+.memory_stats.stats.total_*',
 }
 
-def logging(str):
+def log(str):
     if DEBUG == True:
         ts = time.time()
         print "%s: %s" % (datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S.%f'), str)
 
 def flatten(structure, key="", path="", flattened=None):
-    logging('flattening metric')
+    log('flattening metric')
     if flattened is None:
         flattened = {}
     if type(structure) not in(dict, list):
@@ -84,23 +84,23 @@ def flatten(structure, key="", path="", flattened=None):
     else:
         for new_key, value in structure.items():
             flatten(value, new_key, path + "." + key, flattened)
-    logging('done flattening metric')
+    log('done flattening metric')
     return flattened
 
 def find_containers():
-    logging('getting container ids')
+    log('getting container ids')
     r = requests.get('http://127.0.0.1:2375/containers/json')
-    logging('done getting container ids')
+    log('done getting container ids')
     result = json.loads(r.text)
-    logging('done translating result into json')
+    log('done translating result into json')
     return [c['Id'] for c in result]
 
 def gather_stats(container_id):
-    logging('getting container stats')
+    log('getting container stats')
     r = requests.get("http://127.0.0.1:2375/containers/%s/stats" % container_id, stream=True)
-    logging('done getting container stats')
+    log('done getting container stats')
     result = json.loads(r.raw.readline())
-    logging('done translating result into json')
+    log('done translating result into json')
     return result
 
 def shorten_id(container_id):
@@ -123,14 +123,14 @@ try:
                 blacklisted = False
                 for r in blacklist:
                     if r.match(i[0].encode('ascii')):
-                        logging('skipping blacklisted metric')
+                        log('skipping blacklisted metric')
                         blacklisted = True
                         break
                 if blacklisted == False:
                     for r in whitelist:
                         if r.match(i[0].encode('ascii')):
                             print "metric %s has value %s" % (i[0].encode('ascii'), i[1])
-                            logging('done flattening metric')
+                            log('done flattening metric')
                             break
         except:
             sys.exit(1)
