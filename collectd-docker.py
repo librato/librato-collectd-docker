@@ -54,6 +54,82 @@ try:
 except:
     DEBUG = False
 
+METRICS_MAP = {
+    # This dict represents a map of the original normalized metric path
+    # into a flat namespace for the purpose of easier declaration.
+    # In reality, we break this back out into the original dict structure
+    # before retrieving the relevant attributes.
+
+    'cpu_stats.cpu_usage.total_usage': {
+        'name': 'cpu.usage.total'
+    },
+    'cpu_stats.cpu_usage.usage_in_kernelmode': {
+        'name': 'cpu.usage.kernel'
+    },
+    'cpu_stats.cpu_usage.usage_in_usermode': {
+        'name': 'cpu.usage.user'
+    },
+    'cpu_stats.throttling_data.throttled_periods': {
+        'name': 'cpu.throttled.periods'
+    },
+    'cpu_stats.throttling_data.throttled_time': {
+        'name': 'cpu.throttled.time'
+    },
+    'network.rx_bytes': {},
+    'network.rx_dropped': {},
+    'network.rx_errors': {},
+    'network.rx_packets': {},
+    'network.tx_bytes': {},
+    'network.tx_dropped': {},
+    'network.tx_errors': {},
+    'network.tx_packets': {},
+    'memory_stats.limit': {
+        'name': 'memory.limit'
+    },
+    'memory_stats.max_usage': {
+        'name': 'memory.max_usage'
+    },
+    'memory_stats.stats.active_anon': {
+        'name': 'memory.active_anon'
+    },
+    'memory_stats.stats.active_file': {
+        'name': 'memory.active_file'
+    },
+    'memory_stats.stats.cache': {
+        'name': 'memory.cache'
+    },
+    'memory_stats.stats.hierarchical_memory_limit': {
+        'name': 'memory.hierarchical_limit'
+    },
+    'memory_stats.stats.inactive_anon': {
+        'name': 'memory.inactive_anon'
+    },
+    'memory_stats.stats.inactive_file': {
+        'name': 'memory.inactive_file'
+    },
+    'memory_stats.stats.mapped_file': {
+        'name': 'memory.mapped_file'
+    },
+    'memory_stats.stats.pgfault': {
+        'name': 'memory.page_faults'
+    },
+    'memory_stats.stats.pgmajfault': {
+        'name': 'memory.page_major_faults'
+    },
+    'memory_stats.stats.pgpgin': {
+        'name': 'memory.paged_in'
+    },
+    'memory_stats.stats.pgpgout': {
+        'name': 'memory.paged_out'
+    },
+    'memory_stats.stats.rss': {
+        'name': 'memory.rss'
+    },
+    'memory_stats.stats.rss_huge': {
+        'name': 'memory.rss_huge'
+    },
+}
+
 WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
