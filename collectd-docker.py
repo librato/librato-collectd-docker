@@ -199,7 +199,6 @@ def collectd_output(metric, value):
     return "PUTVAL \"%s/%s\" interval=%s N:%s" % (HOSTNAME, fmt_metric, INTERVAL, value)
 
 try:
-    find_containers()
     whitelist = compile_regex(WHITELIST_STATS)
     blacklist = compile_regex(BLACKLIST_STATS)
     for id in find_containers():
