@@ -177,9 +177,6 @@ def gather_stats(container_id):
     log('done translating result into json')
     return result
 
-def shorten_id(container_id):
-    return container_id[0:12]
-
 def compile_regex(list):
     regexes = []
     for l in list:
