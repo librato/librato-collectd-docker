@@ -186,6 +186,21 @@ def compile_regex(list):
         regexes.append(re.compile(l))
     return regexes
 
+def prettify_name(metric):
+    try:
+        prefix = '.'.join(metric.split('.')[0:2])
+        suffix = '.'.join(metric.split('.')[2:])
+
+        # strip off the docker.<id> prefix and look for our metric
+        if METRICS_MAP[suffix]['name']:
+            return "%s.%s" % (prefix, METRICS_MAP[suffix]['name'])
+    except:
+        return metric
+
+def collectd_output(metric, value):
+    fmt_metric = metric.replace('.', '/')
+    return "PUTVAL \"%s/%s\" interval=%s N:%s" % (HOSTNAME, fmt_metric, INTERVAL, value)
+
 try:
     find_containers()
     whitelist = compile_regex(WHITELIST_STATS)
@@ -203,7 +218,7 @@ try:
                     for r in whitelist:
                         metric = i[0].encode('ascii')
                         if r.match(metric):
-                            print "PUTVAL \"%s/%s\" interval=%s N:%s" % (HOSTNAME, metric.replace('.', '/'), INTERVAL, i[1])
+                            print collectd_output(prettify_name(metric), i[1])
                             break
         except:
             sys.exit(1)
