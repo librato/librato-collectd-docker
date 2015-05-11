@@ -60,18 +60,26 @@ METRICS_MAP = {
     # In reality, we break this back out into the original dict structure
     # before retrieving the relevant attributes.
 
+    # Total CPU time consumed.
+    # Units: nanoseconds
     'cpu_stats.cpu_usage.total_usage': {
         'name': 'cpu-total'
     },
+    # Time spent by tasks of the cgroup in kernel mode.
+    # Units: nanoseconds
     'cpu_stats.cpu_usage.usage_in_kernelmode': {
         'name': 'cpu-kernel'
     },
+    # Time spent by tasks of the cgroup in user mode.
+    # Units: nanoseconds
     'cpu_stats.cpu_usage.usage_in_usermode': {
         'name': 'cpu-user'
     },
+    # Number of periods when the container hit its throttling limit.
     'cpu_stats.throttling_data.throttled_periods': {
         'name': 'cpu-throttled_periods'
     },
+    # Aggregate time the container was throttled for in nanoseconds.
     'cpu_stats.throttling_data.throttled_time': {
         'name': 'cpu-throttled_time'
     },
