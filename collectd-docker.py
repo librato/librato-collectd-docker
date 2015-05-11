@@ -61,86 +61,104 @@ METRICS_MAP = {
     # before retrieving the relevant attributes.
 
     'cpu_stats.cpu_usage.total_usage': {
-        'name': 'cpu.usage.total'
+        'name': 'cpu-total'
     },
     'cpu_stats.cpu_usage.usage_in_kernelmode': {
-        'name': 'cpu.usage.kernel'
+        'name': 'cpu-kernel'
     },
     'cpu_stats.cpu_usage.usage_in_usermode': {
-        'name': 'cpu.usage.user'
+        'name': 'cpu-user'
     },
     'cpu_stats.throttling_data.throttled_periods': {
-        'name': 'cpu.throttled.periods'
+        'name': 'cpu-throttled_periods'
     },
     'cpu_stats.throttling_data.throttled_time': {
-        'name': 'cpu.throttled.time'
+        'name': 'cpu-throttled_time'
     },
-    'network.rx_bytes': {},
-    'network.rx_dropped': {},
-    'network.rx_errors': {},
-    'network.rx_packets': {},
-    'network.tx_bytes': {},
-    'network.tx_dropped': {},
-    'network.tx_errors': {},
-    'network.tx_packets': {},
+    'network.rx_bytes': {
+        'name': 'network-rx_bytes'
+    },
+    'network.rx_dropped': {
+        'name': 'network-rx_dropped'
+    },
+    'network.rx_errors': {
+        'name': 'network-rx_errors'
+    },
+    'network.rx_packets': {
+        'name': 'network-rx_packets'
+    },
+    'network.tx_bytes': {
+        'name': 'network-tx_bytes'
+    },
+    'network.tx_dropped': {
+        'name': 'network-tx_dropped'
+    },
+    'network.tx_errors': {
+        'name': 'network-tx_errors'
+    },
+    'network.tx_packets': {
+        'name': 'network-tx_packets'
+    },
     'memory_stats.limit': {
-        'name': 'memory.limit'
+        'name': 'memory-limit'
     },
     'memory_stats.max_usage': {
-        'name': 'memory.max_usage'
+        'name': 'memory-max_usage'
     },
     'memory_stats.stats.active_anon': {
-        'name': 'memory.active_anon'
+        'name': 'memory-active_anon'
     },
     'memory_stats.stats.active_file': {
-        'name': 'memory.active_file'
+        'name': 'memory-active_file'
     },
     'memory_stats.stats.cache': {
-        'name': 'memory.cache'
+        'name': 'memory-cache'
     },
     'memory_stats.stats.hierarchical_memory_limit': {
-        'name': 'memory.hierarchical_limit'
+        'name': 'memory-hierarchical_limit'
     },
     'memory_stats.stats.inactive_anon': {
-        'name': 'memory.inactive_anon'
+        'name': 'memory-inactive_anon'
     },
     'memory_stats.stats.inactive_file': {
-        'name': 'memory.inactive_file'
+        'name': 'memory-inactive_file'
     },
     'memory_stats.stats.mapped_file': {
-        'name': 'memory.mapped_file'
+        'name': 'memory-mapped_file'
     },
     'memory_stats.stats.pgfault': {
-        'name': 'memory.page_faults'
+        'name': 'memory-page_faults'
     },
     'memory_stats.stats.pgmajfault': {
-        'name': 'memory.page_major_faults'
+        'name': 'memory-page_major_faults'
     },
     'memory_stats.stats.pgpgin': {
-        'name': 'memory.paged_in'
+        'name': 'memory-paged_in'
     },
     'memory_stats.stats.pgpgout': {
-        'name': 'memory.paged_out'
+        'name': 'memory-paged_out'
     },
     'memory_stats.stats.rss': {
-        'name': 'memory.rss'
+        'name': 'memory-rss'
     },
     'memory_stats.stats.rss_huge': {
-        'name': 'memory.rss_huge'
+        'name': 'memory-rss_huge'
     },
 }
 
+# White and Blacklisting happens before flattening
 WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
-    'docker-librato.\w+.blkio_stats.io_service_bytes_recursive.\d+.value',
-    'docker-librato.\w+.blkio_stats.io_serviced_recursive.\d+.value',
+    #'docker-librato.\w+.blkio_stats.io_service_bytes_recursive.\d+.value',
+    #'docker-librato.\w+.blkio_stats.io_serviced_recursive.\d+.value',
     #'docker-librato.\w+.*',
 }
 
 BLACKLIST_STATS = {
     'docker-librato.\w+.memory_stats.stats.total_*',
+    'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
 }
 
 def log(str):
@@ -184,40 +202,42 @@ def compile_regex(list):
     return regexes
 
 def prettify_name(metric):
+    prefix = '-'.join(metric.split('.')[0:2])
+    suffix = '.'.join(metric.split('.')[2:])
     try:
-        prefix = '.'.join(metric.split('.')[0:2])
-        suffix = '.'.join(metric.split('.')[2:])
 
         # strip off the docker.<id> prefix and look for our metric
         if METRICS_MAP[suffix]['name']:
             return "%s.%s" % (prefix, METRICS_MAP[suffix]['name'])
     except:
-        return metric
+        return "%s.%s" % (prefix, suffix)
 
 def collectd_output(metric, value):
     fmt_metric = metric.replace('.', '/')
     return "PUTVAL \"%s/%s\" interval=%s N:%s" % (HOSTNAME, fmt_metric, INTERVAL, value)
 
-try:
-    whitelist = compile_regex(WHITELIST_STATS)
-    blacklist = compile_regex(BLACKLIST_STATS)
-    for id in find_containers():
-        try:
-            stats = gather_stats(id)
-            for i in flatten(stats, key=id[0:12], path='docker-librato').items():
-                blacklisted = False
-                for r in blacklist:
-                    if r.match(i[0].encode('ascii')):
-                        blacklisted = True
-                        break
-                if blacklisted == False:
-                    for r in whitelist:
-                        metric = i[0].encode('ascii')
-                        if r.match(metric):
-                            print collectd_output(prettify_name(metric), i[1])
+while True:
+    try:
+        whitelist = compile_regex(WHITELIST_STATS)
+        blacklist = compile_regex(BLACKLIST_STATS)
+        for id in find_containers():
+            try:
+                stats = gather_stats(id)
+                for i in flatten(stats, key=id[0:12], path='docker-librato').items():
+                    blacklisted = False
+                    for r in blacklist:
+                        if r.match(i[0].encode('ascii')):
+                            blacklisted = True
                             break
-        except:
-            sys.exit(1)
+                    if blacklisted == False:
+                        for r in whitelist:
+                            metric = i[0].encode('ascii')
+                            if r.match(metric):
+                                print collectd_output(prettify_name(metric), i[1])
+                                break
+            except:
+                sys.exit(1)
 
-except KeyboardInterrupt:
-    sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(1)
+    time.sleep(float(INTERVAL))
