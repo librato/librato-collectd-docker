@@ -33,11 +33,22 @@ None.
 
 ### Installation
 
+Docker must be reconfigured to listen on a TCP port. This allows our script to connect to the API and pull more detailed statistics than are otherwise available on the kernel filesystem. The following setting needs to be edited in `/etc/default/docker`, then the `docker` service will need to be restarted.
+
+```
+DOCKER_OPTS="-H tcp://127.0.0.1:2375 -H unix:///var/run/docker.sock"
+```
+```
+$ sudo service docker restart
+```
+
+Then our custom plugin will need to be installed along with an updated types.db (`docker.db`); the `collectd` service can then be restarted.
+
 ```
 $ git clone https://github.com/librato/librato-collectd-docker.git
-$ cp collectd-docker.py /usr/share/collectd/
-$ cp docker.db /etc/collectd/collectd.conf.d/
-$ service restart collectd
+$ sudo cp collectd-docker.py /usr/share/collectd/
+$ sudo cp docker.db /etc/collectd/collectd.conf.d/
+$ sudo service collectd restart
 ```
 
 ## License
