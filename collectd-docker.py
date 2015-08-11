@@ -189,19 +189,27 @@ def flatten(structure, key="", path="", flattened=None):
 
 def find_containers():
     log('getting container ids')
-    r = requests.get('http://127.0.0.1:2375/containers/json')
-    log('done getting container ids')
-    result = json.loads(r.text)
-    log('done translating result into json')
-    return [c['Id'] for c in result]
+    try:
+        r = requests.get('http://127.0.0.1:2375/containers/json')
+        log('done getting container ids')
+        result = json.loads(r.text)
+        log('done translating result into json')
+        return [c['Id'] for c in result]
+    except:
+        log('unable to get container ids')
+        sys.exit(1)
 
 def gather_stats(container_id):
     log('getting container stats')
-    r = requests.get("http://127.0.0.1:2375/containers/%s/stats" % container_id, stream=True)
-    log('done getting container stats')
-    result = json.loads(r.raw.readline())
-    log('done translating result into json')
-    return result
+    try:
+        r = requests.get("http://127.0.0.1:2375/containers/%s/stats" % container_id, stream=True)
+        log('done getting container stats')
+        result = json.loads(r.raw.readline())
+        log('done translating result into json')
+        return result
+    except:
+        log('unable to get container stats')
+        sys.exit(1)
 
 def compile_regex(list):
     regexes = []
