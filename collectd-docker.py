@@ -18,13 +18,15 @@ __license__ = """\
         """
 
 import urllib2
-import requests
+import httplib
 import json
 import time
 import datetime
+import socket
 import os
 import sys
 import re
+from urlparse import urlsplit
 
 # we should first try to grab stats via Docker's API socket
 # (/var/run/docker.sock) and fallback to getting them from
@@ -48,6 +50,20 @@ try:
     INTERVAL = os.environ['COLLECTD_INTERVAL']
 except:
     INTERVAL = 60
+try:
+    try:
+        BASE_URI = os.environ['BASE_URI']
+    except:
+        try:
+            BASE_URI = sys.argv[1]
+        except:
+            raise
+except:
+    BASE_URI = 'unix://var/run/docker.sock'
+try:
+    INTERVAL = os.environ['DEFAULT_SOCKET_TIMEOUT']
+except:
+    DEFAULT_SOCKET_TIMEOUT = 5
 try:
     if os.environ['DEBUG']:
         DEBUG = True
@@ -169,6 +185,43 @@ BLACKLIST_STATS = {
     'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
 }
 
+
+class UnixHTTPConnection(httplib.HTTPConnection):
+
+    socket_timeout = DEFAULT_SOCKET_TIMEOUT
+
+    def __init__(self, unix_socket):
+        self._unix_socket = unix_socket
+
+    def connect(self):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect(self._unix_socket)
+        sock.settimeout(self.socket_timeout)
+        self.sock = sock
+
+    def __call__(self, *args, **kwargs):
+        httplib.HTTPConnection.__init__(self, *args, **kwargs)
+        return self
+
+# monkeypatch UNIX socket support into urllib2
+class UnixSocketHandler(urllib2.AbstractHTTPHandler):
+    def unix_open(self, req):
+        full_path = "%s%s" % urlsplit(req.get_full_url())[1:3]
+        path = os.path.sep
+        for part in full_path.split('/'):
+            path = os.path.join(path, part)
+            if not os.path.exists(path):
+                break
+            unix_socket = path
+        # urllib2 needs an actual hostname or it complains
+        url = req.get_full_url().replace(unix_socket, '/localhost')
+        unix_req = urllib2.Request(url, req.get_data(), dict(req.header_items()))
+        unix_req.timeout = req.timeout
+        return self.do_open(UnixHTTPConnection(unix_socket), unix_req)
+
+    unix_request = urllib2.AbstractHTTPHandler.do_request_
+
+
 def log(str):
     if DEBUG == True:
         ts = time.time()
@@ -190,10 +243,12 @@ def flatten(structure, key="", path="", flattened=None):
 def find_containers():
     log('getting container ids')
     try:
-        r = requests.get('http://127.0.0.1:2375/containers/json')
+        uri = "%s/containers/json" % BASE_URI
+        req = urllib2.Request(uri)
+        opener = urllib2.build_opener(UnixSocketHandler())
+        request = opener.open(req)
+        result = json.loads(request.read())
         log('done getting container ids')
-        result = json.loads(r.text)
-        log('done translating result into json')
         return [c['Id'] for c in result]
     except:
         log('unable to get container ids')
@@ -202,10 +257,12 @@ def find_containers():
 def gather_stats(container_id):
     log('getting container stats')
     try:
-        r = requests.get("http://127.0.0.1:2375/containers/%s/stats" % container_id, stream=True)
+        uri = "%s/containers/%s/stats" % (BASE_URI, container_id)
+        req = urllib2.Request(uri)
+        opener = urllib2.build_opener(UnixSocketHandler())
+        request = opener.open(req)
+        result = json.loads(request.readline())
         log('done getting container stats')
-        result = json.loads(r.raw.readline())
-        log('done translating result into json')
         return result
     except:
         log('unable to get container stats')
