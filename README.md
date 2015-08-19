@@ -33,22 +33,34 @@ None.
 
 ### Installation
 
-Docker must be reconfigured to listen on a TCP port. This allows our script to connect to the API and pull more detailed statistics than are otherwise available on the kernel filesystem. The following setting needs to be edited in `/etc/default/docker`, then the `docker` service will need to be restarted.
-
-```
-DOCKER_OPTS="-H tcp://127.0.0.1:2375 -H unix:///var/run/docker.sock"
-```
-```
-$ sudo service docker restart
-```
-
-Then our custom plugin will need to be installed along with an updated types.db (`docker.db`); the `collectd` service can then be restarted.
+The custom plugin will need to be installed along with an updated types.db (`docker.db`). the `collectd` service can then be restarted.
 
 ```
 $ git clone https://github.com/librato/librato-collectd-docker.git
 $ sudo cp collectd-docker.py /usr/share/collectd/
+$ sudo cp docker.conf /etc/collectd/collectd.conf.d/
 $ sudo cp docker.db /etc/collectd/collectd.conf.d/
 $ sudo service collectd restart
+```
+
+### Configuration
+
+The included `docker.conf` should either be installed into your collectd configurations directory as demonstrated above, or lacking that capability, the following configuration should be enabled in your `collectd.conf`. Any configuration changes will need to be followed with a service restart.
+
+```
+LoadPlugin exec
+<Plugin exec>
+  Exec nobody "/usr/share/collectd/collectd-docker.py"
+</Plugin>
+
+# Add custom TypesDB for network counter stats
+TypesDB "/usr/share/collectd/types.db" "/etc/collectd/collectd.conf.d/docker.db"
+```
+
+Note that the script supports connections to the Docker API via either the default UNIX socket at `unix://var/run/docker.sock` or a TCP port. To change the default URL, simply edit the `Exec` line above to include the URL as an argument. For example, if your Docker API is listening via TCP on port 2375, you'll want to edit the line as such:
+
+```
+  Exec nobody "/usr/share/collectd/collectd-docker.py" "http://127.0.0.1:2375"
 ```
 
 ## License
