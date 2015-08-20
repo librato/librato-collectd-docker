@@ -40,6 +40,7 @@ $ git clone https://github.com/librato/librato-collectd-docker.git
 $ sudo cp collectd-docker.py /usr/share/collectd/
 $ sudo cp docker.conf /etc/collectd/collectd.conf.d/
 $ sudo cp docker.db /etc/collectd/collectd.conf.d/
+$ sudo chmod +x /usr/share/collectd/collectd-docker.py
 $ sudo service collectd restart
 ```
 
