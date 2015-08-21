@@ -29,10 +29,6 @@ collectd.docker.cpu.kernel
 
 None required. Collectd will pass the necessary `COLLECTD_INTERVAL` and `COLLECTD_HOSTNAME` variables into the script at runtime.
 
-### Command-Line Arguments
-
-None.
-
 ### Installation
 
 The custom plugin will need to be installed along with an updated types.db (`docker.db`). Additionally, we need to add a non-superuser user to the `docker` system group for access to the UNIX socket where the Docker API is listening. For our purposes, we've chosen the unprivileged `nobody` system user, although you can adjust this as needed for your environment. The `collectd` service can then be restarted.
