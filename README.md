@@ -21,7 +21,7 @@ collectd.docker.cpu.kernel
 
 ### Dependencies
 
-None, outside of **collectd** and its own dependencies (e.g. Python).
+Python >= 2.7. No other requirements, outside of **collectd** and its own dependencies.
 
 ### Environment Variables
 
@@ -40,6 +40,7 @@ $ git clone https://github.com/librato/librato-collectd-docker.git
 $ sudo cp collectd-docker.py /usr/share/collectd/
 $ sudo cp docker.conf /etc/collectd/collectd.conf.d/
 $ sudo cp docker.db /etc/collectd/collectd.conf.d/
+$ sudo chmod +x /usr/share/collectd/collectd-docker.py
 $ sudo usermod -a -G docker nobody
 $ sudo service collectd restart
 ```
