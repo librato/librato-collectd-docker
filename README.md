@@ -33,13 +33,14 @@ None.
 
 ### Installation
 
-The custom plugin will need to be installed along with an updated types.db (`docker.db`). the `collectd` service can then be restarted.
+The custom plugin will need to be installed along with an updated types.db (`docker.db`). Additionally, we need to add a non-superuser user to the `docker` system group for access to the UNIX socket where the Docker API is listening. For our purposes, we've chosen the unprivileged `nobody` system user, although you can adjust this as needed for your environment. The `collectd` service can then be restarted.
 
 ```
 $ git clone https://github.com/librato/librato-collectd-docker.git
 $ sudo cp collectd-docker.py /usr/share/collectd/
 $ sudo cp docker.conf /etc/collectd/collectd.conf.d/
 $ sudo cp docker.db /etc/collectd/collectd.conf.d/
+$ sudo usermod -a -G docker nobody
 $ sudo service collectd restart
 ```
 
@@ -50,7 +51,7 @@ The included `docker.conf` should either be installed into your collectd configu
 ```
 LoadPlugin exec
 <Plugin exec>
-  Exec nobody "/usr/share/collectd/collectd-docker.py"
+  Exec "nobody:docker" "/usr/share/collectd/collectd-docker.py"
 </Plugin>
 
 # Add custom TypesDB for network counter stats
@@ -60,7 +61,7 @@ TypesDB "/usr/share/collectd/types.db" "/etc/collectd/collectd.conf.d/docker.db"
 Note that the script supports connections to the Docker API via either the default UNIX socket at `unix://var/run/docker.sock` or a TCP port. To change the default URL, simply edit the `Exec` line above to include the URL as an argument. For example, if your Docker API is listening via TCP on port 2375, you'll want to edit the line as such:
 
 ```
-  Exec nobody "/usr/share/collectd/collectd-docker.py" "http://127.0.0.1:2375"
+  Exec "nobody" "/usr/share/collectd/collectd-docker.py" "http://127.0.0.1:2375"
 ```
 
 ## License
