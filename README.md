@@ -21,7 +21,7 @@ collectd.docker.cpu.kernel
 
 ### Dependencies
 
-None, outside of **collectd** and its own dependencies (e.g. Python).
+Python >= 2.7. No other requirements, outside of **collectd** and its own dependencies.
 
 ### Environment Variables
 
