@@ -21,7 +21,9 @@ collectd.docker.cpu.kernel
 
 ### Dependencies
 
-Python >= 2.7. No other requirements, outside of **collectd** and its own dependencies.
+* Python >= 2.7
+* Docker >= 1.5
+* collectd >= 4.0 ([Exec](https://collectd.org/wiki/index.php/Plugin:Exec) plugin support)
 
 ### Environment Variables
 
