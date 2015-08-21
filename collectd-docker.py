@@ -223,9 +223,12 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
 
 
 def log(str):
+    ts = time.time()
+    print "%s: %s" % (datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S.%f'), str)
+
+def debug(str):
     if DEBUG == True:
-        ts = time.time()
-        print "%s: %s" % (datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S.%f'), str)
+        log(str)
 
 def flatten(structure, key="", path="", flattened=None):
     if flattened is None:
@@ -241,28 +244,30 @@ def flatten(structure, key="", path="", flattened=None):
     return flattened
 
 def find_containers():
-    log('getting container ids')
+    debug('getting container ids')
     try:
         uri = "%s/containers/json" % BASE_URI
         req = urllib2.Request(uri)
         opener = urllib2.build_opener(UnixSocketHandler())
         request = opener.open(req)
         result = json.loads(request.read())
-        log('done getting container ids')
+        debug('done getting container ids')
         return [c['Id'] for c in result]
-    except:
+    except urllib2.URLError as e:
         log('unable to get container ids')
+        if re.match('^.*\[Errno 13\].*$', str(e)):
+            log('insufficient permissions to read socket')
         sys.exit(1)
 
 def gather_stats(container_id):
-    log('getting container stats')
+    debug('getting container stats')
     try:
         uri = "%s/containers/%s/stats" % (BASE_URI, container_id)
         req = urllib2.Request(uri)
         opener = urllib2.build_opener(UnixSocketHandler())
         request = opener.open(req)
         result = json.loads(request.readline())
-        log('done getting container stats')
+        debug('done getting container stats')
         return result
     except:
         log('unable to get container stats')
