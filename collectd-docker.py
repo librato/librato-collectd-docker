@@ -31,16 +31,8 @@ from urlparse import urlsplit
 # we should first try to grab stats via Docker's API socket
 # (/var/run/docker.sock) and fallback to getting them from
 # the sysfs cgroup directories
-# 
+#
 # https://docs.docker.com/reference/api/docker_remote_api_v1.18/#get-container-stats-based-on-resource-usage
-# 
-# There are a couple blkio stats that may be useful but they're
-# only exposed by sysfs, not the Docker API
-# 
-# blkio.throttle.io_service_bytes
-# blkio.throttle.io_serviced
-# 
-# https://www.kernel.org/doc/Documentation/cgroups/blkio-controller.txt
 
 try:
     HOSTNAME = os.environ['COLLECTD_HOSTNAME']
@@ -175,16 +167,14 @@ WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
-    #'docker-librato.\w+.blkio_stats.io_service_bytes_recursive.\d+.value',
-    #'docker-librato.\w+.blkio_stats.io_serviced_recursive.\d+.value',
-    #'docker-librato.\w+.*',
+    'docker-librato.\w+.blkio_stats.io_service_bytes_recursive.*',
+    'docker-librato.\w+.blkio_stats.io_serviced_recursive.*',
 }
 
 BLACKLIST_STATS = {
     'docker-librato.\w+.memory_stats.stats.total_*',
     'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
 }
-
 
 class UnixHTTPConnection(httplib.HTTPConnection):
 
@@ -220,7 +210,6 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
         return self.do_open(UnixHTTPConnection(unix_socket), unix_req)
 
     unix_request = urllib2.AbstractHTTPHandler.do_request_
-
 
 def log(str):
     ts = time.time()
@@ -283,7 +272,6 @@ def prettify_name(metric):
     prefix = '-'.join(metric.split('.')[0:2])
     suffix = '.'.join(metric.split('.')[2:])
     try:
-
         # strip off the docker.<id> prefix and look for our metric
         if METRICS_MAP[suffix]['name']:
             return "%s.%s" % (prefix, METRICS_MAP[suffix]['name'])
