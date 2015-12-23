@@ -160,6 +160,36 @@ METRICS_MAP = {
     'memory_stats.stats.rss_huge': {
         'name': 'memory-rss_huge'
     },
+    'blkio_stats.io_service_bytes_recursive.read': {
+        'name': 'blkio-io_service_bytes_recursive-read'
+    },
+    'blkio_stats.io_service_bytes_recursive.write': {
+        'name': 'blkio-io_service_bytes_recursive-write'
+    },
+    'blkio_stats.io_service_bytes_recursive.sync': {
+        'name': 'blkio-io_service_bytes_recursive-sync'
+    },
+    'blkio_stats.io_service_bytes_recursive.async': {
+        'name': 'blkio-io_service_bytes_recursive-async'
+    },
+    'blkio_stats.io_service_bytes_recursive.total': {
+        'name': 'blkio-io_service_bytes_recursive-total'
+    },
+    'blkio_stats.io_serviced_recursive.read': {
+        'name': 'blkio-io_serviced_recursive-read'
+    },
+    'blkio_stats.io_serviced_recursive.write': {
+        'name': 'blkio-io_serviced_recursive-write'
+    },
+    'blkio_stats.io_serviced_recursive.sync': {
+        'name': 'blkio-io_serviced_recursive-sync'
+    },
+    'blkio_stats.io_serviced_recursive.async': {
+        'name': 'blkio-io_serviced_recursive-async'
+    },
+    'blkio_stats.io_serviced_recursive.total': {
+        'name': 'blkio-io_serviced_recursive-total'
+    },
 }
 
 # White and Blacklisting happens before flattening
@@ -167,8 +197,7 @@ WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
-    'docker-librato.\w+.blkio_stats.io_service_bytes_recursive.*',
-    'docker-librato.\w+.blkio_stats.io_serviced_recursive.*',
+    'docker-librato.\w+.blkio_stats.*',
 }
 
 BLACKLIST_STATS = {
@@ -262,6 +291,16 @@ def gather_stats(container_id):
         log('unable to get container stats')
         sys.exit(1)
 
+def build_blkio_stats_for(stats):
+  blkio_stats = {}
+  for key, val in stats['blkio_stats'].iteritems():
+    tmp = {}
+    for op in val:
+      tmp[op.get('op').lower()] = op.get('value')
+    blkio_stats[key] = tmp
+  stats['blkio_stats'] = {}
+  stats['blkio_stats'] = blkio_stats
+
 def compile_regex(list):
     regexes = []
     for l in list:
@@ -289,6 +328,7 @@ while True:
         for id in find_containers():
             try:
                 stats = gather_stats(id)
+                build_blkio_stats_for(stats)
                 for i in flatten(stats, key=id[0:12], path='docker-librato').items():
                     blacklisted = False
                     for r in blacklist:
