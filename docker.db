@@ -1,1 +1,2 @@
+blkio                   value:GAUGE:0:U
 network                 value:COUNTER:U:U
