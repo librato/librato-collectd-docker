@@ -31,16 +31,8 @@ from urlparse import urlsplit
 # we should first try to grab stats via Docker's API socket
 # (/var/run/docker.sock) and fallback to getting them from
 # the sysfs cgroup directories
-# 
+#
 # https://docs.docker.com/reference/api/docker_remote_api_v1.18/#get-container-stats-based-on-resource-usage
-# 
-# There are a couple blkio stats that may be useful but they're
-# only exposed by sysfs, not the Docker API
-# 
-# blkio.throttle.io_service_bytes
-# blkio.throttle.io_serviced
-# 
-# https://www.kernel.org/doc/Documentation/cgroups/blkio-controller.txt
 
 try:
     HOSTNAME = os.environ['COLLECTD_HOSTNAME']
@@ -168,6 +160,36 @@ METRICS_MAP = {
     'memory_stats.stats.rss_huge': {
         'name': 'memory-rss_huge'
     },
+    'blkio_stats.io_service_bytes_recursive.read': {
+        'name': 'blkio-io_service_bytes_read'
+    },
+    'blkio_stats.io_service_bytes_recursive.write': {
+        'name': 'blkio-io_service_bytes_write'
+    },
+    'blkio_stats.io_service_bytes_recursive.sync': {
+        'name': 'blkio-io_service_bytes_sync'
+    },
+    'blkio_stats.io_service_bytes_recursive.async': {
+        'name': 'blkio-io_service_bytes_async'
+    },
+    'blkio_stats.io_service_bytes_recursive.total': {
+        'name': 'blkio-io_service_bytes_total'
+    },
+    'blkio_stats.io_serviced_recursive.read': {
+        'name': 'blkio-io_serviced_read'
+    },
+    'blkio_stats.io_serviced_recursive.write': {
+        'name': 'blkio-io_serviced_write'
+    },
+    'blkio_stats.io_serviced_recursive.sync': {
+        'name': 'blkio-io_serviced_sync'
+    },
+    'blkio_stats.io_serviced_recursive.async': {
+        'name': 'blkio-io_serviced_async'
+    },
+    'blkio_stats.io_serviced_recursive.total': {
+        'name': 'blkio-io_serviced_total'
+    },
 }
 
 # White and Blacklisting happens before flattening
@@ -175,16 +197,13 @@ WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
-    #'docker-librato.\w+.blkio_stats.io_service_bytes_recursive.\d+.value',
-    #'docker-librato.\w+.blkio_stats.io_serviced_recursive.\d+.value',
-    #'docker-librato.\w+.*',
+    'docker-librato.\w+.blkio_stats.*',
 }
 
 BLACKLIST_STATS = {
     'docker-librato.\w+.memory_stats.stats.total_*',
     'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
 }
-
 
 class UnixHTTPConnection(httplib.HTTPConnection):
 
@@ -220,7 +239,6 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
         return self.do_open(UnixHTTPConnection(unix_socket), unix_req)
 
     unix_request = urllib2.AbstractHTTPHandler.do_request_
-
 
 def log(str):
     ts = time.time()
@@ -273,6 +291,16 @@ def gather_stats(container_id):
         log('unable to get container stats')
         sys.exit(1)
 
+def build_blkio_stats_for(stats):
+  blkio_stats = {}
+  for key, val in stats['blkio_stats'].iteritems():
+    tmp = {}
+    for op in val:
+      tmp[op.get('op').lower()] = op.get('value')
+    blkio_stats[key] = tmp
+  stats['blkio_stats'] = {}
+  stats['blkio_stats'] = blkio_stats
+
 def compile_regex(list):
     regexes = []
     for l in list:
@@ -283,7 +311,6 @@ def prettify_name(metric):
     prefix = '-'.join(metric.split('.')[0:2])
     suffix = '.'.join(metric.split('.')[2:])
     try:
-
         # strip off the docker.<id> prefix and look for our metric
         if METRICS_MAP[suffix]['name']:
             return "%s.%s" % (prefix, METRICS_MAP[suffix]['name'])
@@ -301,6 +328,7 @@ while True:
         for id in find_containers():
             try:
                 stats = gather_stats(id)
+                build_blkio_stats_for(stats)
                 for i in flatten(stats, key=id[0:12], path='docker-librato').items():
                     blacklisted = False
                     for r in blacklist:
