@@ -161,34 +161,34 @@ METRICS_MAP = {
         'name': 'memory-rss_huge'
     },
     'blkio_stats.io_service_bytes_recursive.read': {
-        'name': 'blkio-io_service_bytes_recursive-read'
+        'name': 'blkio-io_service_bytes_read'
     },
     'blkio_stats.io_service_bytes_recursive.write': {
-        'name': 'blkio-io_service_bytes_recursive-write'
+        'name': 'blkio-io_service_bytes_write'
     },
     'blkio_stats.io_service_bytes_recursive.sync': {
-        'name': 'blkio-io_service_bytes_recursive-sync'
+        'name': 'blkio-io_service_bytes_sync'
     },
     'blkio_stats.io_service_bytes_recursive.async': {
-        'name': 'blkio-io_service_bytes_recursive-async'
+        'name': 'blkio-io_service_bytes_async'
     },
     'blkio_stats.io_service_bytes_recursive.total': {
-        'name': 'blkio-io_service_bytes_recursive-total'
+        'name': 'blkio-io_service_bytes_total'
     },
     'blkio_stats.io_serviced_recursive.read': {
-        'name': 'blkio-io_serviced_recursive-read'
+        'name': 'blkio-io_serviced_read'
     },
     'blkio_stats.io_serviced_recursive.write': {
-        'name': 'blkio-io_serviced_recursive-write'
+        'name': 'blkio-io_serviced_write'
     },
     'blkio_stats.io_serviced_recursive.sync': {
-        'name': 'blkio-io_serviced_recursive-sync'
+        'name': 'blkio-io_serviced_sync'
     },
     'blkio_stats.io_serviced_recursive.async': {
-        'name': 'blkio-io_serviced_recursive-async'
+        'name': 'blkio-io_serviced_async'
     },
     'blkio_stats.io_serviced_recursive.total': {
-        'name': 'blkio-io_serviced_recursive-total'
+        'name': 'blkio-io_serviced_total'
     },
 }
 
