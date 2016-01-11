@@ -27,6 +27,7 @@ import os
 import sys
 import re
 from urlparse import urlsplit
+from collections import Counter
 
 # we should first try to grab stats via Docker's API socket
 # (/var/run/docker.sock) and fallback to getting them from
@@ -91,28 +92,28 @@ METRICS_MAP = {
     'cpu_stats.throttling_data.throttled_time': {
         'name': 'cpu-throttled_time'
     },
-    'network.rx_bytes': {
+    'networks.rx_bytes': {
         'name': 'network-rx_bytes'
     },
-    'network.rx_dropped': {
+    'networks.rx_dropped': {
         'name': 'network-rx_dropped'
     },
-    'network.rx_errors': {
+    'networks.rx_errors': {
         'name': 'network-rx_errors'
     },
-    'network.rx_packets': {
+    'networks.rx_packets': {
         'name': 'network-rx_packets'
     },
-    'network.tx_bytes': {
+    'networks.tx_bytes': {
         'name': 'network-tx_bytes'
     },
-    'network.tx_dropped': {
+    'networks.tx_dropped': {
         'name': 'network-tx_dropped'
     },
-    'network.tx_errors': {
+    'networks.tx_errors': {
         'name': 'network-tx_errors'
     },
-    'network.tx_packets': {
+    'networks.tx_packets': {
         'name': 'network-tx_packets'
     },
     'memory_stats.limit': {
@@ -196,7 +197,7 @@ METRICS_MAP = {
 WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
-    'docker-librato.\w+.network.*',
+    'docker-librato.\w+.networks.*',
     'docker-librato.\w+.blkio_stats.*',
 }
 
@@ -291,6 +292,24 @@ def gather_stats(container_id):
         log('unable to get container stats')
         sys.exit(1)
 
+def build_network_stats_for(stats):
+    network_stats = {
+        'rx_bytes':   0,
+        'rx_dropped': 0,
+        'rx_errors':  0,
+        'rx_packets': 0,
+        'tx_bytes':   0,
+        'tx_dropped': 0,
+        'tx_errors':  0,
+        'tx_packets': 0,
+    }
+    aggregated_interface_stats = {}
+    for interface, interface_stats in stats['networks'].iteritems():
+        aggregated_interface_stats = dict(Counter(aggregated_interface_stats) + Counter(interface_stats))
+        network_stats.update(aggregated_interface_stats)
+    stats['networks'] = {}
+    stats['networks'] = network_stats
+
 def build_blkio_stats_for(stats):
   blkio_stats = {}
   for key, val in stats['blkio_stats'].iteritems():
@@ -329,6 +348,7 @@ while True:
             try:
                 stats = gather_stats(id)
                 build_blkio_stats_for(stats)
+                build_network_stats_for(stats)
                 for i in flatten(stats, key=id[0:12], path='docker-librato').items():
                     blacklisted = False
                     for r in blacklist:
