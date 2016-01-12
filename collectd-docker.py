@@ -320,6 +320,10 @@ def build_blkio_stats_for(stats):
   stats['blkio_stats'] = {}
   stats['blkio_stats'] = blkio_stats
 
+def format_stats(stats):
+    build_blkio_stats_for(stats)
+    build_network_stats_for(stats)
+
 def compile_regex(list):
     regexes = []
     for l in list:
@@ -347,8 +351,7 @@ while True:
         for id in find_containers():
             try:
                 stats = gather_stats(id)
-                build_blkio_stats_for(stats)
-                build_network_stats_for(stats)
+                format_stats(stats)
                 for i in flatten(stats, key=id[0:12], path='docker-librato').items():
                     blacklisted = False
                     for r in blacklist:
