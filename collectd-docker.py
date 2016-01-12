@@ -311,14 +311,14 @@ def build_network_stats_for(stats):
     stats['networks'] = network_stats
 
 def build_blkio_stats_for(stats):
-  blkio_stats = {}
-  for key, val in stats['blkio_stats'].iteritems():
-    tmp = {}
-    for op in val:
-      tmp[op.get('op').lower()] = op.get('value')
-    blkio_stats[key] = tmp
-  stats['blkio_stats'] = {}
-  stats['blkio_stats'] = blkio_stats
+    blkio_stats = {}
+    for key, val in stats['blkio_stats'].iteritems():
+        tmp = {}
+        for op in val:
+            tmp[op.get('op').lower()] = op.get('value')
+        blkio_stats[key] = tmp
+    stats['blkio_stats'] = {}
+    stats['blkio_stats'] = blkio_stats
 
 def format_stats(stats):
     build_blkio_stats_for(stats)
