@@ -92,28 +92,28 @@ METRICS_MAP = {
     'cpu_stats.throttling_data.throttled_time': {
         'name': 'cpu-throttled_time'
     },
-    'networks.rx_bytes': {
+    'network.rx_bytes': {
         'name': 'network-rx_bytes'
     },
-    'networks.rx_dropped': {
+    'network.rx_dropped': {
         'name': 'network-rx_dropped'
     },
-    'networks.rx_errors': {
+    'network.rx_errors': {
         'name': 'network-rx_errors'
     },
-    'networks.rx_packets': {
+    'network.rx_packets': {
         'name': 'network-rx_packets'
     },
-    'networks.tx_bytes': {
+    'network.tx_bytes': {
         'name': 'network-tx_bytes'
     },
-    'networks.tx_dropped': {
+    'network.tx_dropped': {
         'name': 'network-tx_dropped'
     },
-    'networks.tx_errors': {
+    'network.tx_errors': {
         'name': 'network-tx_errors'
     },
-    'networks.tx_packets': {
+    'network.tx_packets': {
         'name': 'network-tx_packets'
     },
     'memory_stats.limit': {
@@ -197,6 +197,7 @@ METRICS_MAP = {
 WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
+    'docker-librato.\w+.network.*',
     'docker-librato.\w+.networks.*',
     'docker-librato.\w+.blkio_stats.*',
 }
@@ -262,6 +263,20 @@ def flatten(structure, key="", path="", flattened=None):
             flatten(value, new_key, path + "." + key, flattened)
     return flattened
 
+def api_version():
+    debug('getting API version')
+    try:
+        uri = "%s/version" % BASE_URI
+        req = urllib2.Request(uri)
+        opener = urllib2.build_opener(UnixSocketHandler())
+        request = opener.open(req)
+        result = json.loads(request.readline())
+        debug('done getting API version')
+        return result['ApiVersion']
+    except:
+        log('unable to get API version')
+        sys.exit(1)
+
 def find_containers():
     debug('getting container ids')
     try:
@@ -303,12 +318,16 @@ def build_network_stats_for(stats):
         'tx_errors':  0,
         'tx_packets': 0,
     }
+
     aggregated_interface_stats = {}
+
     for interface, interface_stats in stats['networks'].iteritems():
         aggregated_interface_stats = dict(Counter(aggregated_interface_stats) + Counter(interface_stats))
         network_stats.update(aggregated_interface_stats)
+
     stats['networks'] = {}
-    stats['networks'] = network_stats
+    stats['network'] = {}
+    stats['network'] = network_stats
 
 def build_blkio_stats_for(stats):
     blkio_stats = {}
@@ -322,7 +341,8 @@ def build_blkio_stats_for(stats):
 
 def format_stats(stats):
     build_blkio_stats_for(stats)
-    build_network_stats_for(stats)
+    if api_version() >= '1.21':
+        build_network_stats_for(stats)
 
 def compile_regex(list):
     regexes = []
