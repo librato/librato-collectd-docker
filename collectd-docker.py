@@ -27,6 +27,7 @@ import os
 import sys
 import re
 from urlparse import urlsplit
+from collections import Counter
 
 # we should first try to grab stats via Docker's API socket
 # (/var/run/docker.sock) and fallback to getting them from
@@ -197,6 +198,7 @@ WHITELIST_STATS = {
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
+    'docker-librato.\w+.networks.*',
     'docker-librato.\w+.blkio_stats.*',
 }
 
@@ -261,6 +263,20 @@ def flatten(structure, key="", path="", flattened=None):
             flatten(value, new_key, path + "." + key, flattened)
     return flattened
 
+def api_version():
+    debug('getting API version')
+    try:
+        uri = "%s/version" % BASE_URI
+        req = urllib2.Request(uri)
+        opener = urllib2.build_opener(UnixSocketHandler())
+        request = opener.open(req)
+        result = json.loads(request.readline())
+        debug('done getting API version')
+        return result['ApiVersion']
+    except:
+        log('unable to get API version')
+        sys.exit(1)
+
 def find_containers():
     debug('getting container ids')
     try:
@@ -291,15 +307,42 @@ def gather_stats(container_id):
         log('unable to get container stats')
         sys.exit(1)
 
+def build_network_stats_for(stats):
+    network_stats = {
+        'rx_bytes':   0,
+        'rx_dropped': 0,
+        'rx_errors':  0,
+        'rx_packets': 0,
+        'tx_bytes':   0,
+        'tx_dropped': 0,
+        'tx_errors':  0,
+        'tx_packets': 0,
+    }
+
+    aggregated_interface_stats = {}
+
+    for interface, interface_stats in stats['networks'].iteritems():
+        aggregated_interface_stats = dict(Counter(aggregated_interface_stats) + Counter(interface_stats))
+        network_stats.update(aggregated_interface_stats)
+
+    stats['networks'] = {}
+    stats['network'] = {}
+    stats['network'] = network_stats
+
 def build_blkio_stats_for(stats):
-  blkio_stats = {}
-  for key, val in stats['blkio_stats'].iteritems():
-    tmp = {}
-    for op in val:
-      tmp[op.get('op').lower()] = op.get('value')
-    blkio_stats[key] = tmp
-  stats['blkio_stats'] = {}
-  stats['blkio_stats'] = blkio_stats
+    blkio_stats = {}
+    for key, val in stats['blkio_stats'].iteritems():
+        tmp = {}
+        for op in val:
+            tmp[op.get('op').lower()] = op.get('value')
+        blkio_stats[key] = tmp
+    stats['blkio_stats'] = {}
+    stats['blkio_stats'] = blkio_stats
+
+def format_stats(stats):
+    build_blkio_stats_for(stats)
+    if api_version() >= '1.21':
+        build_network_stats_for(stats)
 
 def compile_regex(list):
     regexes = []
@@ -328,7 +371,7 @@ while True:
         for id in find_containers():
             try:
                 stats = gather_stats(id)
-                build_blkio_stats_for(stats)
+                format_stats(stats)
                 for i in flatten(stats, key=id[0:12], path='docker-librato').items():
                     blacklisted = False
                     for r in blacklist:
