@@ -191,6 +191,21 @@ METRICS_MAP = {
     'blkio_stats.io_serviced_recursive.total': {
         'name': 'blkio-io_serviced_total'
     },
+    'info.images': {
+        'name': 'images-total'
+    },
+    'info.containers': {
+        'name': 'containers-total'
+    },
+    'info.containersrunning': {
+        'name': 'containers-running'
+    },
+    'info.containersstopped': {
+        'name': 'containers-stopped'
+    },
+    'info.containerspaused': {
+        'name': 'containers-paused'
+    },
 }
 
 # White and Blacklisting happens before flattening
@@ -200,6 +215,7 @@ WHITELIST_STATS = {
     'docker-librato.\w+.network.*',
     'docker-librato.\w+.networks.*',
     'docker-librato.\w+.blkio_stats.*',
+    'docker-librato.\w+.info.*',
 }
 
 BLACKLIST_STATS = {
@@ -277,6 +293,20 @@ def api_version():
         log('unable to get API version')
         sys.exit(1)
 
+def info():
+    debug('getting info')
+    try:
+        uri = "%s/info" % BASE_URI
+        req = urllib2.Request(uri)
+        opener = urllib2.build_opener(UnixSocketHandler())
+        request = opener.open(req)
+        result = json.loads(request.readline())
+        debug('done getting info')
+        return result
+    except:
+        log('unable to get info')
+        sys.exit(1)
+
 def find_containers():
     debug('getting container ids')
     try:
@@ -306,6 +336,15 @@ def gather_stats(container_id):
     except:
         log('unable to get container stats')
         sys.exit(1)
+
+def build_info_stats_for(stats):
+    info_stats = {}
+
+    for key, val in info().iteritems():
+        if key in ['Images', 'Containers', 'ContainersRunning', 'ContainersStopped', 'ContainersPaused']:
+          info_stats[key.lower()] = val
+
+    stats['info'] = info_stats
 
 def build_network_stats_for(stats):
     network_stats = {
@@ -343,6 +382,8 @@ def format_stats(stats):
     build_blkio_stats_for(stats)
     if api_version() >= '1.21':
         build_network_stats_for(stats)
+    if api_version() >= '1.22':
+        build_info_stats_for(stats)
 
 def compile_regex(list):
     regexes = []
