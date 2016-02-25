@@ -1,2 +1,4 @@
 blkio                   value:GAUGE:0:U
+containers              value:GAUGE:0:U
+images                  value:GAUGE:0:U
 network                 value:COUNTER:U:U
