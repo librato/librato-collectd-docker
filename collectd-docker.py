@@ -405,6 +405,25 @@ def collectd_output(metric, value):
     fmt_metric = metric.replace('.', '/')
     return "PUTVAL \"%s/%s\" interval=%s N:%s" % (HOSTNAME, fmt_metric, INTERVAL, value)
 
+def submit_values(stats, container_id=''):
+    try:
+        whitelist = compile_regex(WHITELIST_STATS)
+        blacklist = compile_regex(BLACKLIST_STATS)
+        for i in flatten(stats, key=container_id, path='docker-librato').items():
+            blacklisted = False
+            for r in blacklist:
+                if r.match(i[0].encode('ascii')):
+                    blacklisted = True
+                    break
+            if blacklisted == False:
+                for r in whitelist:
+                    metric = i[0].encode('ascii')
+                    if r.match(metric):
+                        print collectd_output(prettify_name(metric), i[1])
+                        break
+    except:
+        sys.exit(1)
+
 while True:
     try:
         whitelist = compile_regex(WHITELIST_STATS)
