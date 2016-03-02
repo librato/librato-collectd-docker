@@ -396,6 +396,9 @@ def prettify_name(metric):
     prefix = '-'.join(metric.split('.')[0:2])
     suffix = '.'.join(metric.split('.')[2:])
 
+    if prefix == "docker-librato-global":
+        prefix = "docker" # plugin_instance is optional
+
     try:
         # strip off the docker.<id> prefix and look for our metric
         if METRICS_MAP[suffix]['name']:
