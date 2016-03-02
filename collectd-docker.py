@@ -337,14 +337,17 @@ def gather_stats(container_id):
         log('unable to get container stats')
         sys.exit(1)
 
-def build_info_stats_for(stats):
+def build_info_stats():
     info_stats = {}
+    stats = {}
 
     for key, val in info().iteritems():
         if key in ['Images', 'Containers', 'ContainersRunning', 'ContainersStopped', 'ContainersPaused']:
           info_stats[key.lower()] = val
 
     stats['info'] = info_stats
+
+    submit_values(stats, 'global')
 
 def build_network_stats_for(stats):
     network_stats = {
@@ -382,8 +385,6 @@ def format_stats(stats):
     build_blkio_stats_for(stats)
     if api_version() >= '1.21':
         build_network_stats_for(stats)
-    if api_version() >= '1.22':
-        build_info_stats_for(stats)
 
 def compile_regex(list):
     regexes = []
@@ -394,6 +395,7 @@ def compile_regex(list):
 def prettify_name(metric):
     prefix = '-'.join(metric.split('.')[0:2])
     suffix = '.'.join(metric.split('.')[2:])
+
     try:
         # strip off the docker.<id> prefix and look for our metric
         if METRICS_MAP[suffix]['name']:
@@ -426,27 +428,12 @@ def submit_values(stats, container_id=''):
 
 while True:
     try:
-        whitelist = compile_regex(WHITELIST_STATS)
-        blacklist = compile_regex(BLACKLIST_STATS)
+        if api_version() >= '1.22':
+            build_info_stats()
         for id in find_containers():
-            try:
-                stats = gather_stats(id)
-                format_stats(stats)
-                for i in flatten(stats, key=id[0:12], path='docker-librato').items():
-                    blacklisted = False
-                    for r in blacklist:
-                        if r.match(i[0].encode('ascii')):
-                            blacklisted = True
-                            break
-                    if blacklisted == False:
-                        for r in whitelist:
-                            metric = i[0].encode('ascii')
-                            if r.match(metric):
-                                print collectd_output(prettify_name(metric), i[1])
-                                break
-            except:
-                sys.exit(1)
-
+            stats = gather_stats(id)
+            format_stats(stats)
+            submit_values(stats, id[0:12])
     except KeyboardInterrupt:
         sys.exit(1)
     time.sleep(float(INTERVAL))
