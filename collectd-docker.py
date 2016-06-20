@@ -209,19 +209,19 @@ METRICS_MAP = {
 }
 
 # White and Blacklisting happens before flattening
-WHITELIST_STATS = {
+WHITELIST_STATS = [
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
     'docker-librato.\w+.networks.*',
     'docker-librato.\w+.blkio_stats.*',
     'docker-librato.\w+.info.*',
-}
+]
 
-BLACKLIST_STATS = {
+BLACKLIST_STATS = [
     'docker-librato.\w+.memory_stats.stats.total_*',
     'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
-}
+]
 
 class UnixHTTPConnection(httplib.HTTPConnection):
 
