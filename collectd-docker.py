@@ -361,14 +361,10 @@ def build_network_stats_for(stats):
         'tx_packets': 0,
     }
 
-    aggregated_interface_stats = {}
-
     for interface, interface_stats in stats['networks'].iteritems():
-        aggregated_interface_stats = dict(Counter(aggregated_interface_stats) + Counter(interface_stats))
-        network_stats.update(aggregated_interface_stats)
+        for key, value in interface_stats.iteritems():
+            network_stats[key] += value
 
-    stats['networks'] = {}
-    stats['network'] = {}
     stats['network'] = network_stats
 
 def build_blkio_stats_for(stats):
