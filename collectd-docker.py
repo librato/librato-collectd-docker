@@ -209,19 +209,19 @@ METRICS_MAP = {
 }
 
 # White and Blacklisting happens before flattening
-WHITELIST_STATS = {
+WHITELIST_STATS = [
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
     'docker-librato.\w+.networks.*',
     'docker-librato.\w+.blkio_stats.*',
     'docker-librato.\w+.info.*',
-}
+]
 
-BLACKLIST_STATS = {
+BLACKLIST_STATS = [
     'docker-librato.\w+.memory_stats.stats.total_*',
     'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
-}
+]
 
 class UnixHTTPConnection(httplib.HTTPConnection):
 
@@ -361,14 +361,13 @@ def build_network_stats_for(stats):
         'tx_packets': 0,
     }
 
-    aggregated_interface_stats = {}
-
     for interface, interface_stats in stats['networks'].iteritems():
-        aggregated_interface_stats = dict(Counter(aggregated_interface_stats) + Counter(interface_stats))
-        network_stats.update(aggregated_interface_stats)
+        for key, value in interface_stats.iteritems():
+            network_stats[key] += value
 
-    stats['networks'] = {}
-    stats['network'] = {}
+    # Remove non-aggregated network stats
+    del stats['networks']
+
     stats['network'] = network_stats
 
 def build_blkio_stats_for(stats):
@@ -383,6 +382,7 @@ def build_blkio_stats_for(stats):
 
 def format_stats(stats):
     build_blkio_stats_for(stats)
+    # Network stats not available in earlier versions
     if api_version() >= '1.21':
         build_network_stats_for(stats)
 
