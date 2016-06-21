@@ -379,6 +379,7 @@ def build_blkio_stats_for(stats):
 
 def format_stats(stats):
     build_blkio_stats_for(stats)
+    # Network stats not available in earlier versions
     if api_version() >= '1.21':
         build_network_stats_for(stats)
 
