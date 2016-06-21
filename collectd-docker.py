@@ -365,6 +365,9 @@ def build_network_stats_for(stats):
         for key, value in interface_stats.iteritems():
             network_stats[key] += value
 
+    # Remove non-aggregated network stats
+    del stats['networks']
+
     stats['network'] = network_stats
 
 def build_blkio_stats_for(stats):
