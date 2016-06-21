@@ -27,7 +27,6 @@ import os
 import sys
 import re
 from urlparse import urlsplit
-from collections import Counter
 
 # we should first try to grab stats via Docker's API socket
 # (/var/run/docker.sock) and fallback to getting them from
