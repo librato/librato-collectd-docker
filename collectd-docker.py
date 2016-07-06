@@ -222,6 +222,10 @@ BLACKLIST_STATS = [
     'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
 ]
 
+whitelist = [re.compile(l) for l in WHITELIST_STATS]
+blacklist = [re.compile(l) for l in BLACKLIST_STATS]
+
+
 class UnixHTTPConnection(httplib.HTTPConnection):
 
     socket_timeout = DEFAULT_SOCKET_TIMEOUT
@@ -376,7 +380,6 @@ def build_blkio_stats_for(stats):
         for op in val:
             tmp[op.get('op').lower()] = op.get('value')
         blkio_stats[key] = tmp
-    stats['blkio_stats'] = {}
     stats['blkio_stats'] = blkio_stats
 
 def format_stats(stats):
@@ -384,12 +387,6 @@ def format_stats(stats):
     # Network stats not available in earlier versions
     if api_version() >= '1.21':
         build_network_stats_for(stats)
-
-def compile_regex(list):
-    regexes = []
-    for l in list:
-        regexes.append(re.compile(l))
-    return regexes
 
 def prettify_name(metric):
     prefix = '-'.join(metric.split('.')[0:2])
@@ -411,8 +408,6 @@ def collectd_output(metric, value):
 
 def submit_values(stats, container_id=''):
     try:
-        whitelist = compile_regex(WHITELIST_STATS)
-        blacklist = compile_regex(BLACKLIST_STATS)
         for i in flatten(stats, key=container_id, path='docker-librato').items():
             blacklisted = False
             for r in blacklist:
@@ -424,11 +419,14 @@ def submit_values(stats, container_id=''):
                     metric = i[0].encode('ascii')
                     if r.match(metric):
                         print collectd_output(prettify_name(metric), i[1])
+                        sys.stdout.flush()
                         break
     except:
         sys.exit(1)
 
 while True:
+    st = datetime.datetime.now()
+    delta = 0
     try:
         if api_version() >= '1.22':
             build_info_stats()
@@ -438,4 +436,8 @@ while True:
             submit_values(stats, id[0:12])
     except KeyboardInterrupt:
         sys.exit(1)
-    time.sleep(float(INTERVAL))
+    finally:
+        delta = (datetime.datetime.now() - st).total_seconds()
+
+    interval = max(5, float(INTERVAL) - delta)
+    time.sleep(interval)
