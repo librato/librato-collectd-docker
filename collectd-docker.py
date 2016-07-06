@@ -439,5 +439,5 @@ while True:
     finally:
         delta = (datetime.datetime.now() - st).total_seconds()
 
-    interval = max(5, float(INTERVAL) - delta)
+    interval = max(1, float(INTERVAL) - delta)
     time.sleep(interval)
