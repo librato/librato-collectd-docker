@@ -208,7 +208,7 @@ METRICS_MAP = {
 }
 
 # White and Blacklisting happens before flattening
-WHITELIST_STATS = [
+whitelist_stats = [
     'docker-librato.\w+.cpu_stats.*',
     'docker-librato.\w+.memory_stats.*',
     'docker-librato.\w+.network.*',
@@ -216,14 +216,13 @@ WHITELIST_STATS = [
     'docker-librato.\w+.blkio_stats.*',
     'docker-librato.\w+.info.*',
 ]
+whitelist = [re.compile(l) for l in whitelist_stats]
 
-BLACKLIST_STATS = [
+blacklist_stats = [
     'docker-librato.\w+.memory_stats.stats.total_*',
     'docker-librato.\w+.cpu_stats.cpu_usage.percpu_usage.*',
 ]
-
-whitelist = [re.compile(l) for l in WHITELIST_STATS]
-blacklist = [re.compile(l) for l in BLACKLIST_STATS]
+blacklist = [re.compile(l) for l in blacklist_stats]
 
 
 class UnixHTTPConnection(httplib.HTTPConnection):
@@ -439,5 +438,7 @@ while True:
     finally:
         delta = (datetime.datetime.now() - st).total_seconds()
 
+    # Adjust the sleep interval to maintain a regular cadence,
+    # since fetching Docker metrics can take several seconds
     interval = max(1, float(INTERVAL) - delta)
     time.sleep(interval)
