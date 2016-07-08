@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__license__ = """\
-    Copyright (c) 2015 Jason Dixon <jdixon@librato.com>
-
-    Permission to use, copy, modify, and distribute this software for any
-    purpose with or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\
-        """
+# Copyright (c) 2015 Jason Dixon <jdixon@librato.com>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\
 
 import urllib2
 import httplib
@@ -242,6 +240,7 @@ class UnixHTTPConnection(httplib.HTTPConnection):
         httplib.HTTPConnection.__init__(self, *args, **kwargs)
         return self
 
+
 # monkeypatch UNIX socket support into urllib2
 class UnixSocketHandler(urllib2.AbstractHTTPHandler):
     def unix_open(self, req):
@@ -260,13 +259,16 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
 
     unix_request = urllib2.AbstractHTTPHandler.do_request_
 
+
 def log(str):
     ts = time.time()
     print "%s: %s" % (datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S.%f'), str)
 
+
 def debug(str):
-    if DEBUG == True:
+    if DEBUG:
         log(str)
+
 
 def flatten(structure, key="", path="", flattened=None):
     if flattened is None:
@@ -280,6 +282,7 @@ def flatten(structure, key="", path="", flattened=None):
         for new_key, value in structure.items():
             flatten(value, new_key, path + "." + key, flattened)
     return flattened
+
 
 def api_version():
     debug('getting API version')
@@ -295,6 +298,7 @@ def api_version():
         log('unable to get API version')
         sys.exit(1)
 
+
 def info():
     debug('getting info')
     try:
@@ -308,6 +312,7 @@ def info():
     except:
         log('unable to get info')
         sys.exit(1)
+
 
 def find_containers():
     debug('getting container ids')
@@ -325,6 +330,7 @@ def find_containers():
             log('insufficient permissions to read socket')
         sys.exit(1)
 
+
 def gather_stats(container_id):
     debug('getting container stats')
     try:
@@ -339,17 +345,19 @@ def gather_stats(container_id):
         log('unable to get container stats')
         sys.exit(1)
 
+
 def build_info_stats():
     info_stats = {}
     stats = {}
 
     for key, val in info().iteritems():
         if key in ['Images', 'Containers', 'ContainersRunning', 'ContainersStopped', 'ContainersPaused']:
-          info_stats[key.lower()] = val
+            info_stats[key.lower()] = val
 
     stats['info'] = info_stats
 
     submit_values(stats, 'global')
+
 
 def build_network_stats_for(stats):
     network_stats = {
@@ -372,6 +380,7 @@ def build_network_stats_for(stats):
 
     stats['network'] = network_stats
 
+
 def build_blkio_stats_for(stats):
     blkio_stats = {}
     for key, val in stats['blkio_stats'].iteritems():
@@ -381,18 +390,20 @@ def build_blkio_stats_for(stats):
         blkio_stats[key] = tmp
     stats['blkio_stats'] = blkio_stats
 
+
 def format_stats(stats):
     build_blkio_stats_for(stats)
     # Network stats not available in earlier versions
     if api_version() >= '1.21':
         build_network_stats_for(stats)
 
+
 def prettify_name(metric):
     prefix = '-'.join(metric.split('.')[0:2])
     suffix = '.'.join(metric.split('.')[2:])
 
     if prefix == "docker-librato-global":
-        prefix = "docker" # plugin_instance is optional
+        prefix = "docker"  # plugin_instance is optional
 
     try:
         # strip off the docker.<id> prefix and look for our metric
@@ -401,9 +412,11 @@ def prettify_name(metric):
     except:
         return "%s.%s" % (prefix, suffix)
 
+
 def collectd_output(metric, value):
     fmt_metric = metric.replace('.', '/')
     return "PUTVAL \"%s/%s\" interval=%s N:%s" % (HOSTNAME, fmt_metric, INTERVAL, value)
+
 
 def submit_values(stats, container_id=''):
     try:
@@ -413,7 +426,7 @@ def submit_values(stats, container_id=''):
                 if r.match(i[0].encode('ascii')):
                     blacklisted = True
                     break
-            if blacklisted == False:
+            if not blacklisted:
                 for r in whitelist:
                     metric = i[0].encode('ascii')
                     if r.match(metric):
